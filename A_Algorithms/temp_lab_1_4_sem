@@ -1,0 +1,169 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <stack>
+#include <stdlib.h>
+#define PI 3.14159265 
+
+/*Нахождение выпуклой оболочки множества точек
+В данной задаче требуется ввести N точек своими координатами (x,y). Затем требуется определить, существует ли выпуклая оболочка заданного множества точек. При этом можно использовать:
+1.	или алгоритм Грэхема, или алгоритм Джарвиса, или метод «разделяй и властвуй»
+*/
+//
+struct spot
+{
+private:
+    double x_c = 0;
+    double y_c = 0;
+public:
+    spot(double x, double y) : x_c(x), y_c(y) {};
+    spot(spot* x) { x_c = x->get_x(); y_c = x->get_y(); }
+
+    double get_x() { return x_c; };
+    double get_y() { return y_c; };
+    void set_x(double x) { x_c = x; }
+    void set_y(double y) { y_c = y; }
+    void ReInc(spot x) { x_c = x.get_x(); y_c = x.get_y(); }
+
+    bool operator == (const spot& spot) const
+    {
+        return ((x_c == spot.x_c) and (y_c == spot.y_c));
+    }
+
+};
+
+
+void PrintSpotVec(std::vector <spot> spots)
+{
+    if (spots.size() < 3) { std::cout << "Convex hulls DO NOT EXIST!" << std::endl; }
+    for (int y = 0; y < spots.size(); y++)
+    {
+        std::cout << "[ " << spots[y].get_x() << " , " << spots[y].get_y() << " ]" << std::endl;
+    }
+}
+
+
+double polar_deg(spot sp) //невостребованная функция
+{
+    double start_x = sp.get_x();
+    double start_y = sp.get_y();
+    double ang = atan2(start_y, start_x) * 180 / PI;
+    if (ang < 0) { ang += 360; }
+    return ang;
+
+}
+
+
+int left_orientation(spot start, spot fin1, spot fin2) // ака fin2 левее fin1
+{
+    double slope1 = (fin1.get_y() - start.get_y()) * (fin2.get_x() - fin1.get_x());
+    double slope2 = (fin2.get_y() - fin1.get_y()) * (fin1.get_x() - start.get_x());
+
+    if (slope1 == slope2) {
+        return  0;
+    }
+    else if (slope1 < slope2) { // our
+        return 1;
+    }
+    else {
+        return -1;
+    }
+}
+
+void swap_point(spot* p1, spot* p2)
+{
+    spot temp(p1->get_x(), p1->get_y());
+    p1->set_x(p2->get_x());
+    p1->set_y(p2->get_y());
+
+    p2->set_x(temp.get_x());
+    p2->set_y(temp.get_y());
+
+
+}
+
+spot min_point(std::vector <spot> spots)
+{
+    int size = spots.size();
+
+
+    int l = 0;
+    for (int c = 0; c < size; c++)
+    {
+        for (int h = 0; h < size - l - 1; h++)
+        {
+            if (spots[h].get_x() > spots[h + 1].get_x()) { swap_point(&spots[h], &spots[h + 1]); }
+        }
+        l++;
+    }
+
+    return spots[0];
+}
+
+
+
+
+std::vector <spot> jarv_scan(std::vector <spot> spots)
+{
+    //1 этап
+    int size = spots.size();
+
+    spot on_path = min_point(spots);
+    std::vector <spot> path;
+    bool flag = true;
+
+    while (flag)
+    {
+        path.push_back(on_path);
+        spot next_point = spots[0];
+        for (int x = 0; x < size; x++)
+        {
+            int o = left_orientation(on_path, next_point, spots[x]);
+            if ((next_point == on_path) or o == 1)
+            {
+                next_point = spots[x];
+            }
+        }
+        on_path = next_point;
+        if (on_path == path[0]) { flag = false; }
+    }
+
+    return path;
+
+}
+
+
+
+
+
+
+
+
+int main()
+{
+
+    spot FF(1, 1);
+    spot f1(-1, -1);
+    spot f2(-1, 1);
+    spot f3(1, -1);
+    spot inside_1(0, 0);
+    spot inside_2(0, 1);
+    spot outside_1(11, 2);
+
+    //std::cout << left_orientation(FF, f1, f2);
+
+
+    std::vector<spot> dsd;
+    dsd.push_back(FF);
+    dsd.push_back(f1);
+    dsd.push_back(f2);
+    dsd.push_back(f3);
+    dsd.push_back(inside_1);
+    dsd.push_back(inside_2);
+    dsd.push_back(outside_1);
+    std::vector <spot> path_1 = jarv_scan(dsd);
+    PrintSpotVec(path_1);
+
+
+
+}
